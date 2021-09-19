@@ -1,2 +1,5 @@
-#dockerVolume
-docker/
+var.env
+.gitsecret/keys/random_seed
+!*.secret
+volumes
+docker

@@ -1,0 +1,64 @@
+version: "3.8"
+
+# TODO add nginx or caddy
+# TODO add env and git secrets
+# TODO add frontend deploy
+
+networks:
+  keycloak: {}
+  mongo: {}
+
+x-service: &service
+  env_file: var.env
+
+volumes:
+  Postgres:
+    driver: local
+
+services:
+  postgres:
+    <<: *service
+    image: postgres
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - ./volumes/Postgres:/var/lib/postgresql/data
+    networks:
+      - keycloak
+  keycloak:
+    <<: *service
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - 8081:8080
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - keycloak
+  mongo-express:
+    <<: *service
+    image: mongo-express
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    ports:
+      - 8082:8081
+    networks:
+      - mongo
+  mongo:
+    <<: *service
+    image: mongo
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./volumes/MongoDB:/data/db
+    networks:
+      - mongo
