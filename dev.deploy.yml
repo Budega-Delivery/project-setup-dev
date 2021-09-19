@@ -5,60 +5,51 @@ version: "3.8"
 # TODO add frontend deploy
 
 networks:
-  keycloak: {}
-  mongo: {}
-
-x-service: &service
-  env_file: var.env
-
-volumes:
-  Postgres:
-    driver: local
+  keycloak_network: {}
+    
 
 services:
-  postgres:
-    <<: *service
-    image: postgres
-    deploy:
+  mariadb:
+    # <<: *service
+    image: mariadb
+    deploy:      
       replicas: 1
       restart_policy:
         condition: on-failure
+    env_file:
+    - ./var.env
     volumes:
-      - ./volumes/Postgres:/var/lib/postgresql/data
+      - ./volumes/mariadb:/var/lib/mysql
+    healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "--silent"]
     networks:
-      - keycloak
+      - keycloak_network
   keycloak:
-    <<: *service
+    # <<: *service
     image: quay.io/keycloak/keycloak:latest
     ports:
       - 8081:8080
+    env_file:
+    - ./var.env
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
     networks:
-      - keycloak
-  mongo-express:
-    <<: *service
-    image: mongo-express
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-    ports:
-      - 8082:8081
-    networks:
-      - mongo
+      - keycloak_network
+    depends_on:
+      - mariadb
   mongo:
-    <<: *service
+    # <<: *service
     image: mongo
     deploy:
       replicas: 1
+      endpoint_mode: vip
       restart_policy:
         condition: on-failure
     ports:
-      - "27017:27017"
+      - 27017:27017
+    env_file:
+    - ./var.env
     volumes:
-      - ./volumes/MongoDB:/data/db
-    networks:
-      - mongo
+      - ./volumes/mongo:/data/db
